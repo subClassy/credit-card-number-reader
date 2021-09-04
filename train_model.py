@@ -1,10 +1,11 @@
 import tensorflow as tf
-from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint
-from tensorflow.keras.layers import (Activation, Conv2D, Dense, Flatten,
-                                     MaxPooling2D, Dropout)
+from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint, ReduceLROnPlateau
+from tensorflow.keras.layers import (Activation, BatchNormalization, Conv2D,
+                                     Dense, Dropout, Flatten, MaxPooling2D)
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.optimizers import RMSprop
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
+from tensorflow.keras.regularizers import L2
 
 input_shape = (32, 32, 3)
 img_width = 32
@@ -13,7 +14,7 @@ num_classes = 10
 nb_train_samples = 20000
 nb_validation_samples = 4000
 batch_size = 16
-epochs = 10
+epochs = 25
 
 train_data_dir = './credit_card/train'
 validation_data_dir = './credit_card/test'
@@ -45,17 +46,29 @@ validation_generator = validation_datagen.flow_from_directory(
 
 model = Sequential()
 
-model.add(Conv2D(32, (5, 5), padding = "same", input_shape = input_shape))
+model.add(Conv2D(32, (5, 5), padding = "same", input_shape = input_shape, activity_regularizer=L2(1e-5)))
 model.add(Activation("relu"))
+model.add(BatchNormalization())
 model.add(MaxPooling2D(pool_size = (2, 2), strides = (2, 2)))
+model.add(Dropout(0.5))
 
-model.add(Conv2D(64, (5, 5), padding = "same"))
+model.add(Conv2D(64, (5, 5), padding = "same", activity_regularizer=L2(1e-5)))
 model.add(Activation("relu"))
+model.add(BatchNormalization())
 model.add(MaxPooling2D(pool_size = (2, 2), strides = (2, 2)))
+model.add(Dropout(0.5))
 
 model.add(Flatten())
-model.add(Dense(500))
+model.add(Dense(512))
 model.add(Activation("relu"))
+model.add(BatchNormalization())
+model.add(Dropout(0.5))
+
+model.add(Flatten())
+model.add(Dense(256))
+model.add(Activation("relu"))
+model.add(BatchNormalization())
+model.add(Dropout(0.5))
 
 model.add(Dense(num_classes))
 model.add(Activation("softmax"))
@@ -75,14 +88,19 @@ checkpoint = ModelCheckpoint("models/creditcard.h5",
 
 earlystop = EarlyStopping(monitor='val_loss', 
                           min_delta = 0, 
-                          patience = 3,
+                          patience = 5,
                           verbose = 1,
                           restore_best_weights = True)
 
-callbacks = [earlystop, checkpoint]
+lr = ReduceLROnPlateau(monitor="val_loss",
+                       factor=0.1,
+                       patience=3,
+                       verbose=1)
+
+callbacks = [earlystop, checkpoint, lr]
 
 model.compile(loss = 'categorical_crossentropy',
-              optimizer = RMSprop(lr = 0.001),
+              optimizer = RMSprop(lr = 0.0001),
               metrics = ['accuracy'])
 
 history = model.fit_generator(
