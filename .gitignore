@@ -1,2 +1,4 @@
 *.ipynb
 *.jpg
+**/credit_card/*
+!**/credit_card_font/*
