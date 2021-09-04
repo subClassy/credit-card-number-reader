@@ -1,7 +1,8 @@
-import cv2
 import os
-import numpy as np
 import random
+
+import cv2
+import numpy as np
 
 cc1 = cv2.imread('credit_card_font/creditcard_digits1.jpg', 0)
 cc2 = cv2.imread('credit_card_font/creditcard_digits2.jpg', 0)
