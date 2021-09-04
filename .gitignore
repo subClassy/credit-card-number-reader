@@ -3,3 +3,4 @@
 **/credit_card/*
 **/models/*
 !**/credit_card_font/*
+!**/test_card/*
